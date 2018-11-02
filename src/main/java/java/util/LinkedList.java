@@ -662,6 +662,7 @@ public class LinkedList<E>
 
      */
     public ListIterator<E> listIterator(int index) {
+        // index >= 0 && index <= size; 判断位置是否越界
         checkPositionIndex(index);
         return new ListItr(index);
     }
@@ -676,18 +677,18 @@ public class LinkedList<E>
         private Node<E> next;
         /**下一个节点下标**/
         private int nextIndex;
-        /**计数器**/
+        /**计数器，判断是否同一时间修改过**/
         private int expectedModCount = modCount;
 
         /**
-         * 构造器
+         * 构造器，初始化
          * @param index 下标
          */
         ListItr(int index) {
             // assert isPositionIndex(index);
-            //根据传入下标，查找对应的节点
+            //初始化下一个节点为index位置的节点
             next = (index == size) ? null : node(index);
-            //设置为下一个节点下标
+            //初始位置为下一个节点下标
             nextIndex = index;
         }
 
@@ -762,10 +763,11 @@ public class LinkedList<E>
         }
 
         /**
-         * 移除
+         * 移除当前元素
          */
         public void remove() {
             checkForComodification();
+            //最后一次返回的元素为null 抛出异常
             if (lastReturned == null)
                 throw new IllegalStateException();
 
@@ -777,6 +779,7 @@ public class LinkedList<E>
                 next = lastNext;
             else
                 nextIndex--;
+            //设置最后一次返回的元素为null ，说明remove方法不能连续调用多次
             lastReturned = null;
             expectedModCount++;
         }
@@ -786,9 +789,11 @@ public class LinkedList<E>
          * @param e
          */
         public void set(E e) {
+            //最后一次返回的元素为null 抛出异常
             if (lastReturned == null)
                 throw new IllegalStateException();
             checkForComodification();
+            //重新设置值
             lastReturned.item = e;
         }
 
@@ -797,16 +802,20 @@ public class LinkedList<E>
          * @param e
          */
         public void add(E e) {
+            //检查list
             checkForComodification();
+
             lastReturned = null;
+
             if (next == null)
-                linkLast(e);
+                linkLast(e); //向最后插入
             else
-                linkBefore(e, next);
+                linkBefore(e, next);//当前位置的下一个插入
             nextIndex++;
             expectedModCount++;
         }
 
+        //变量迭代器，可在consumer内部操作list的值
         public void forEachRemaining(Consumer<? super E> action) {
             Objects.requireNonNull(action);
             while (modCount == expectedModCount && nextIndex < size) {
@@ -818,6 +827,7 @@ public class LinkedList<E>
             checkForComodification();
         }
 
+        //检查同一时刻，list是否被修改
         final void checkForComodification() {
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
