@@ -877,64 +877,90 @@ public class ArrayList<E> extends AbstractList<E>
      * 
      */
     private class Itr implements Iterator<E> {
+        //游标，记录下一个元素的位置
         int cursor;       // index of next element to return
+        //最后一次访问的元素索引，没有则-1
         int lastRet = -1; // index of last element returned; -1 if no such
+        // 期望的数量，这个用来判断迭代器遍历的时候Arraylist被修改的问题
         int expectedModCount = modCount;
 
+        // Arraylist内部是数组，所以数组大小不等于游标的位置，就认为有下一个元素
         public boolean hasNext() {
             return cursor != size;
         }
 
+        //获取下一个元素
         @SuppressWarnings("unchecked")
         public E next() {
+            // 检查同一时间Arraylist是否被修改，如果修改过直接抛出异常
             checkForComodification();
             int i = cursor;
+            //越界，抛出没有元素异常
             if (i >= size)
                 throw new NoSuchElementException();
             Object[] elementData = ArrayList.this.elementData;
+            // 这个判断和上面的意思一样，判断是否越界。这里再次判断，是考虑到了多线程环境下，同时候修改了list
             if (i >= elementData.length)
                 throw new ConcurrentModificationException();
+            // 游标++
             cursor = i + 1;
+            // 获取元素，并设置最后一次访问的位置
             return (E) elementData[lastRet = i];
         }
 
+        // 移除元素
         public void remove() {
+            //如果元素没有迭代器访问过，这抛出异常
             if (lastRet < 0)
                 throw new IllegalStateException();
+
+            //  检查同一时间Arraylist是否被修改
             checkForComodification();
 
             try {
+                // 移除最近访问的那个元素
                 ArrayList.this.remove(lastRet);
+                //cursor位置设置为移除前那元素的后续元素
                 cursor = lastRet;
+                //设置为-1，注意：这样就说明不能同时多次调用remove方法。
                 lastRet = -1;
+                //修改过元素，要重新设置预期的数量，否则下一次变量抛出异常
                 expectedModCount = modCount;
             } catch (IndexOutOfBoundsException ex) {
                 throw new ConcurrentModificationException();
             }
         }
 
+        //新玩法：变量迭代器，可在consumer内部操作list的值
         @Override
         @SuppressWarnings("unchecked")
         public void forEachRemaining(Consumer<? super E> consumer) {
             Objects.requireNonNull(consumer);
+            //1、变量位置大于等于数组，不遍历
             final int size = ArrayList.this.size;
             int i = cursor;
             if (i >= size) {
                 return;
             }
+
+            // 2、判断遍历位置大于等于数组实际大小，则认为是list有修改过，抛出异常
             final Object[] elementData = ArrayList.this.elementData;
             if (i >= elementData.length) {
                 throw new ConcurrentModificationException();
             }
+
+            //循环变量
             while (i != size && modCount == expectedModCount) {
                 consumer.accept((E) elementData[i++]);
             }
             // update once at end of iteration to reduce heap write traffic
+            //更新游标和最后范围的标识
             cursor = i;
             lastRet = i - 1;
             checkForComodification();
         }
 
+        //检查同一时刻，list是否被修改
         final void checkForComodification() {
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
