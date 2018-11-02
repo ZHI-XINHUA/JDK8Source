@@ -974,41 +974,68 @@ public class ArrayList<E> extends AbstractList<E>
      * 
      */
     private class ListItr extends Itr implements ListIterator<E> {
+        //带参构造器，初始化迭代器遍历的游标位置
         ListItr(int index) {
             super();
             cursor = index;
         }
 
+        /**
+         * 是否有上一个元素
+         * @return
+         */
         public boolean hasPrevious() {
             return cursor != 0;
         }
 
+        /**
+         * 下一个元素的索引位置
+         * @return
+         */
         public int nextIndex() {
             return cursor;
         }
 
+        /**
+         * 上一个元素的索引位置
+         * @return
+         */
         public int previousIndex() {
             return cursor - 1;
         }
 
-        @SuppressWarnings("unchecked")
+        /**
+         * 获取上一个元素
+         * @return
+         */
         public E previous() {
+            //判断是否修改过
             checkForComodification();
+            //获取当前游标的上一个索引位置，如果当前游标是第一个，这抛出没有上一个元素异常
             int i = cursor - 1;
             if (i < 0)
                 throw new NoSuchElementException();
+            //获取元素数组
             Object[] elementData = ArrayList.this.elementData;
+            //如果上一个元素位置大于等于数组大小，说明不在数组范围内，抛出异常（出现这种情况，可能是多线程环境下对集合进行了修改【添加或删除元素】）
             if (i >= elementData.length)
                 throw new ConcurrentModificationException();
+            //重新设置游标，游标向前移动
             cursor = i;
             return (E) elementData[lastRet = i];
         }
 
+        /**
+         * 修改当前元素
+         * @param e
+         */
         public void set(E e) {
+            //如果没有访问操作的元素，这不能修改，抛出异常。
             if (lastRet < 0)
                 throw new IllegalStateException();
             checkForComodification();
 
+            //重新设置当前元素的值
             try {
                 ArrayList.this.set(lastRet, e);
             } catch (IndexOutOfBoundsException ex) {
@@ -1016,13 +1043,20 @@ public class ArrayList<E> extends AbstractList<E>
             }
         }
 
+        /**
+         * 添加元素，在游标索引cursor后面添加元素
+         * @param e
+         */
         public void add(E e) {
             checkForComodification();
 
             try {
                 int i = cursor;
+                //添加元素
                 ArrayList.this.add(i, e);
+                //游标加1
                 cursor = i + 1;
+                //设置最好访问的标示
                 lastRet = -1;
                 expectedModCount = modCount;
             } catch (IndexOutOfBoundsException ex) {
